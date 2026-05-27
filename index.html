@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SUDOKU BY MK</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4f9eff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SUDOKU">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<!-- SEO -->
+<meta name="description" content="Premium Sudoku by Mayank Bro - Play with leaderboard, XP levels and more!">
+<meta property="og:title" content="SUDOKU BY MAYANK BRO">
+<meta property="og:description" content="Premium Sudoku game with global leaderboard and XP system">
+<meta property="og:image" content="icon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Outfit:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Firebase CDN — loads first -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="firebase-init.js"></script>
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<canvas id="rain-canvas"></canvas>
+
+<!-- ====== LOGIN SCREEN ====== -->
+<div class="screen" id="login-screen">
+  <canvas id="login-rain" style="position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0.5;"></canvas>
+  <div class="login-card" style="position:relative;z-index:1;">
+
+    <!-- Logo -->
+    <div class="login-logo-wrap">
+      <div class="login-logo">SUDOKU</div>
+      <div class="login-sub">BY MAYANK BRO</div>
+    </div>
+
+    <!-- Feature pills -->
+    <div class="login-features">
+      <div class="lf-pill">🏆 Leaderboard</div>
+      <div class="lf-pill">☁️ Cloud Save</div>
+      <div class="lf-pill">⚡ XP & Levels</div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="login-btns">
+      <button class="google-btn" onclick="signInGoogle()">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        Continue with Google
+      </button>
+
+      <div class="login-divider"><span>or</span></div>
+
+      <button class="guest-btn" onclick="signInGuest()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+        Play as Guest
+      </button>
+    </div>
+
+    <div class="login-note">Guest progress is saved on this device only</div>
+  </div>
+</div>
+
+<!-- START SCREEN -->
+<div class="screen hidden" id="start-screen">
+  <div class="home-topbar">
+    <button class="home-icon-btn" onclick="toggleFullscreen()" id="fs-home-btn">
+      <svg id="fs-icon-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+        <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+      </svg>
+    </button>
+    <button class="home-icon-btn" onclick="openSettings()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+      </svg>
+    </button>
+  </div>
+  <div class="logo-wrap">
+    <div class="logo-title">SUDOKU</div>
+    <div class="logo-made-by">BY MAYANK BRO</div>
+  </div>
+  <div class="diff-label">Select Difficulty</div>
+  <div class="diff-grid">
+    <button class="diff-btn selected" data-diff="easy" onclick="selectDiff(this)"><span>EASY<span class="diff-sub">Relaxed</span></span></button>
+    <button class="diff-btn" data-diff="medium" onclick="selectDiff(this)"><span>MED<span class="diff-sub">Balanced</span></span></button>
+    <button class="diff-btn" data-diff="hard" onclick="selectDiff(this)"><span>HARD<span class="diff-sub">Expert</span></span></button>
+  </div>
+  <button class="start-btn" onclick="startGame()">&#9654; &nbsp; START GAME</button>
+  <button class="lb-home-btn" onclick="openLeaderboard()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 20 18 10"/><polyline points="12 20 12 4"/><polyline points="6 20 6 14"/></svg>
+    GLOBAL LEADERBOARD
+  </button>
+  <div class="home-stats">
+    <div class="home-stats-title">Your Statistics</div>
+    <div class="home-stats-grid">
+      <div class="home-stat-card"><div class="home-stat-icon">🏆</div><div class="home-stat-val" id="hs-solved">0</div><div class="home-stat-lbl">Solved</div></div>
+      <div class="home-stat-card"><div class="home-stat-icon">⚡</div><div class="home-stat-val" id="hs-score">0</div><div class="home-stat-lbl">Best Score</div></div>
+      <div class="home-stat-card"><div class="home-stat-icon">⏱</div><div class="home-stat-val" id="hs-time">--</div><div class="home-stat-lbl">Best Time</div></div>
+    </div>
+    <div class="home-stats-row2">
+      <div class="diff-stat-card easy-card"><div class="diff-stat-dot e"></div><div class="diff-stat-num" id="hs-easy">0</div><div class="diff-stat-lbl">Easy</div></div>
+      <div class="diff-stat-card med-card"><div class="diff-stat-dot m"></div><div class="diff-stat-num" id="hs-medium">0</div><div class="diff-stat-lbl">Medium</div></div>
+      <div class="diff-stat-card hard-card"><div class="diff-stat-dot h"></div><div class="diff-stat-num" id="hs-hard">0</div><div class="diff-stat-lbl">Hard</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-backdrop hidden" id="settings-modal" onclick="closeSettingsOnBg(event)">
+  <div class="modal-card">
+    <div class="modal-header"><div class="modal-title">SETTINGS</div><button class="modal-close" onclick="closeSettings()">x</button></div>
+    <div class="modal-body">
+      <div class="setting-row" onclick="toggleTheme()">
+        <div class="setting-row-left">
+          <div class="setting-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></div>
+          <div class="setting-text-wrap"><div class="setting-name">Dark Mode</div><div class="setting-desc" id="theme-setting-desc">Currently: DARK</div></div>
+        </div>
+        <div class="toggle on" id="theme-toggle-modal"></div>
+      </div>
+      <div class="setting-row" onclick="toggleSound()">
+        <div class="setting-row-left">
+          <div class="setting-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg></div>
+          <div class="setting-text-wrap"><div class="setting-name">Sound Effects</div><div class="setting-desc" id="sound-setting-desc">Currently: ON</div></div>
+        </div>
+        <div class="toggle on" id="sound-toggle-modal"></div>
+      </div>
+      <!-- Player Name for Leaderboard -->
+      <div class="setting-row" style="flex-direction:column; align-items:stretch; gap:10px; cursor:default;">
+        <div class="setting-row-left">
+          <div class="setting-icon" style="background:rgba(255,215,0,0.12);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="gold" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div class="setting-text-wrap">
+            <div class="setting-name">Leaderboard Name</div>
+            <div class="setting-desc">Naam jo leaderboard pe dikhega</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <input id="player-name-input" type="text" maxlength="20"
+            placeholder="Apna naam likho..."
+            style="flex:1; padding:9px 12px; border-radius:10px;
+                   border:1.5px solid var(--border2); background:var(--surface2);
+                   color:var(--text); font-family:var(--font-display);
+                   font-size:15px; font-weight:600; outline:none;
+                   transition:border-color 0.2s;"
+            onfocus="this.style.borderColor='var(--accent)'"
+            onblur="this.style.borderColor='var(--border2)'">
+          <button onclick="savePlayerName()"
+            style="padding:9px 16px; border-radius:10px; border:none;
+                   background:linear-gradient(135deg,var(--accent),var(--accent2));
+                   color:#fff; font-family:var(--font-display);
+                   font-size:14px; font-weight:700; cursor:pointer;
+                   white-space:nowrap; box-shadow:0 4px 12px rgba(79,158,255,0.3);">
+            Save
+          </button>
+        </div>
+      </div>
+
+      <div class="setting-row" onclick="openCredits()">
+        <div class="setting-row-left">
+          <div class="setting-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+          <div class="setting-text-wrap"><div class="setting-name">Credits</div><div class="setting-desc">Who made this?</div></div>
+        </div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:var(--text3);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="setting-row reset-row" onclick="confirmReset()">
+        <div class="setting-row-left">
+          <div class="setting-icon" style="background:rgba(255,79,109,0.12);"><svg viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg></div>
+          <div class="setting-text-wrap"><div class="setting-name" style="color:var(--danger);">Reset All Data</div><div class="setting-desc">Stats & progress</div></div>
+        </div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" style="width:16px;height:16px;flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CREDITS MODAL -->
+<div class="modal-backdrop hidden" id="credits-modal" onclick="closeCreditsOnBg(event)">
+  <div class="modal-card">
+    <div class="modal-header"><div class="modal-title">CREDITS</div><button class="modal-close" onclick="closeCredits()">x</button></div>
+    <div class="modal-body">
+      <div class="credits-card">
+        <div class="credits-avatar">&#128126;</div>
+        <div class="credits-role">Game Developer</div>
+        <div class="credits-name">MAYANK BRO</div>
+        <div class="credits-divider"></div>
+        <div class="credits-tagline">"Coded with passion, played with pride."</div>
+        <div class="credits-badge">&#9889; Premium Sudoku 2025</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RESET CONFIRM -->
+<div class="modal-backdrop hidden" id="reset-confirm-modal" onclick="closeResetOnBg(event)">
+  <div class="modal-card">
+    <div class="modal-header"><div class="modal-title">RESET DATA</div><button class="modal-close" onclick="closeResetModal()">x</button></div>
+    <div class="reset-confirm-body">
+      <div class="reset-confirm-text">Sab kuch reset ho jaayega<br><strong>Stats aur Progress</strong><br>Yeh undo nahi ho sakti!</div>
+      <div class="reset-confirm-btns">
+        <button class="reset-cancel-btn" onclick="closeResetModal()">Cancel</button>
+        <button class="reset-confirm-btn" onclick="doReset()">Reset</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LEADERBOARD MODAL -->
+<div id="leaderboard-modal" class="hidden">
+  <div class="lb-card">
+    <div class="lb-header"><div class="lb-title">LEADERBOARD</div><button class="modal-close" onclick="closeLeaderboard()">x</button></div>
+    <div class="lb-tabs">
+      <button class="lb-tab active" onclick="switchLbTab('easy',this)">Easy</button>
+      <button class="lb-tab" onclick="switchLbTab('medium',this)">Medium</button>
+      <button class="lb-tab" onclick="switchLbTab('hard',this)">Hard</button>
+    </div>
+    <div class="lb-list" id="lb-list"><div class="lb-loading">Loading...</div></div>
+    <div class="lb-submit-section hidden" id="lb-submit-section">
+      <input class="lb-name-input" id="lb-name-input" placeholder="Apna naam likho..." maxlength="20">
+      <button class="lb-submit-btn" id="lb-submit-btn" onclick="submitScore()">🏆 &nbsp; SUBMIT MY SCORE</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div class="modal-backdrop hidden" id="profile-modal" onclick="closeProfileOnBg(event)">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title">PROFILE</div>
+      <button class="modal-close" onclick="closeProfile()">x</button>
+    </div>
+    <div class="modal-body">
+      <div style="text-align:center;padding:8px 0 16px;">
+        <div class="profile-avatar-sm" id="modal-avatar">M</div>
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--text);margin:8px 0 2px;" id="modal-name">Player</div>
+        <div style="font-size:10px;font-family:var(--font-mono);color:var(--text3);letter-spacing:0.15em;" id="modal-type">GUEST</div>
+      </div>
+      <div class="level-badge-big" id="modal-level-badge" style="margin:0 auto 16px;">
+        <div class="lbb-label">LEVEL</div>
+        <div class="lbb-num" id="modal-level-num">1</div>
+        <div class="lbb-title" id="modal-level-title">Beginner</div>
+      </div>
+      <div class="xp-bar-wrap" style="margin-bottom:16px;">
+        <div class="xp-bar-track"><div class="xp-bar-fill" id="modal-xp-fill" style="width:0%"></div></div>
+        <div class="xp-bar-label" id="modal-xp-label">0 / 100 XP</div>
+      </div>
+      <div id="modal-upgrade-section" class="hidden">
+        <button class="google-btn" style="width:100%;justify-content:center;margin-bottom:8px;" onclick="upgradeToGoogle()">
+          <svg viewBox="0 0 24 24" width="18" height="18"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Save Progress with Google
+        </button>
+        <div style="font-size:10px;color:var(--text3);text-align:center;font-family:var(--font-mono);">Link Google to sync across devices</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game-screen" class="hidden">
+  <div class="game-inner">
+    <div class="header">
+      <div style="display:flex;align-items:center;gap:8px;">
+          <div class="header-logo">SUDOKU BY MK</div>
+          <div class="level-chip" id="game-level-chip" onclick="openProfile()">LVL <span id="game-level-num">1</span></div>
+        </div>
+      <div class="header-actions">
+        <div class="font-slider-wrap">
+          <button class="icon-btn" onclick="toggleFontSlider()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+          </button>
+          <div class="font-slider-popup hidden" id="font-slider-popup">
+            <div class="font-slider-label">Cell Font Size</div>
+            <div class="font-slider-row">
+              <span style="font-size:11px;color:var(--text3)">A</span>
+              <input type="range" class="font-range" id="font-range" min="10" max="32" value="20" oninput="changeFontSize(this.value)">
+              <span style="font-size:18px;color:var(--text3)">A</span>
+            </div>
+            <div class="font-size-indicator" id="font-size-val">20px</div>
+          </div>
+        </div>
+        <button class="icon-btn" onclick="newGame()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        </button>
+        <button class="icon-btn" id="pause-header-btn" onclick="togglePause()">
+          <svg id="pause-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-card"><div class="stat-label">Time</div><div class="stat-value accent" id="timer-display">00:00</div></div>
+      <div class="stat-card" id="mistakes-card"><div class="stat-label">Mistakes</div><div class="stat-value" id="mistakes-display">0/3</div></div>
+      <div class="stat-card"><div class="stat-label">Hints</div><div class="stat-value" id="hints-display">3</div></div>
+      <div class="stat-card"><div class="stat-label">Score</div><div class="stat-value" id="score-display">0</div></div>
+    </div>
+    <div class="toggle-row">
+      <div class="toggle-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--accent)"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Auto-Check Errors
+      </div>
+      <div class="toggle on" id="autocheck-toggle" onclick="toggleAutoCheck()"></div>
+    </div>
+    <div class="board-wrap"><div class="board" id="board"></div></div>
+    <div class="controls-section">
+      <div class="controls-row">
+        <button class="ctrl-btn" id="notes-btn" onclick="toggleNotes()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Notes
+        </button>
+        <button class="ctrl-btn" id="hint-btn" onclick="useHint()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Hint
+          <span class="hint-count" id="hint-count-label">3 left</span>
+        </button>
+      </div>
+    </div>
+    <div class="numpad" id="numpad"></div>
+  </div>
+</div>
+
+<!-- PAUSE OVERLAY -->
+<div id="pause-overlay" class="hidden">
+  <div class="pause-bg"></div>
+  <div class="pause-glow"></div>
+  <div class="pause-content">
+    <div class="pause-title" data-text="PAUSED">PAUSED</div>
+    <div class="pause-pills">
+      <div class="pause-pill"><div class="pause-pill-label">Time</div><div class="pause-pill-val" id="pause-time-val">00:00</div></div>
+      <div class="pause-pill"><div class="pause-pill-label">Mistakes</div><div class="pause-pill-val" id="pause-mistakes-val">0</div></div>
+      <div class="pause-pill"><div class="pause-pill-label">Score</div><div class="pause-pill-val" id="pause-score-val">0</div></div>
+    </div>
+    <button class="resume-btn" onclick="togglePause()">&#9654;&nbsp; RESUME</button>
+    <div class="pause-action-row">
+      <button class="pause-icon-btn" onclick="toggleThemeFromPause()" id="pause-theme-btn">
+        <svg id="pause-theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+        <span>Toggle Theme</span>
+      </button>
+      <button class="pause-icon-btn" onclick="toggleFullscreen()">
+        <svg id="fs-icon-game" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        <span>Fullscreen</span>
+      </button>
+      <button class="pause-icon-btn" onclick="goHome()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Main Menu</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- WIN OVERLAY -->
+<div id="win-overlay" class="hidden">
+  <div class="win-emoji">🎉</div>
+  <div class="win-title">SOLVED!</div>
+  <div class="win-stats">
+    <div class="win-stat"><div class="win-stat-label">Time</div><div class="win-stat-val" id="win-time">00:00</div></div>
+    <div class="win-stat"><div class="win-stat-label">Mistakes</div><div class="win-stat-val" id="win-mistakes">0</div></div>
+    <div class="win-stat"><div class="win-stat-label">Score</div><div class="win-stat-val" id="win-score">0</div></div>
+  </div>
+  <div class="win-btns">
+    <button class="win-btn secondary" onclick="goHome()">Menu</button>
+    <button class="win-btn secondary" onclick="openLeaderboardFromWin()" style="border-color:gold;color:gold;">🏆 Leaderboard</button>
+    <button class="win-btn primary" onclick="playAgain()">Play Again</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="game.js"></script>
+<script>
+  // Register Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/sw.js')
+        .then(function(reg) { console.log('SW registered ✅'); })
+        .catch(function(err) { console.log('SW error:', err); });
+    });
+  }
+</script>
+</body>
+</html>
